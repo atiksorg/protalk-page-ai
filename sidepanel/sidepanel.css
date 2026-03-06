@@ -365,6 +365,121 @@ html, body {
   color: var(--text-secondary);
 }
 
+/* ===== PAGE TEXT TEXTAREA ===== */
+.page-text-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.page-text-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.page-text-title svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+
+.page-text-wrapper {
+  margin-bottom: 12px;
+}
+
+.page-textarea {
+  width: 100%;
+  min-height: 200px;
+  max-height: 400px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.page-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.page-textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.page-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.page-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-textarea::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.page-text-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ===== QUICK ACTIONS ===== */
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.quick-actions.hidden {
+  display: none;
+}
+
+.quick-action-btn {
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-action-btn:hover {
+  background: var(--bg);
+  border-color: var(--accent);
+}
+
+.quick-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* ===== ПОДВАЛ ===== */
 .panel-footer {
   flex-shrink: 0;
