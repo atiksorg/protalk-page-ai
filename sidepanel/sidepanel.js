@@ -90,7 +90,11 @@ function updatePageInfo() {
   
   if (state.pageTitle || state.pageUrl) {
     pageTitle.textContent = state.pageTitle || 'Без названия';
-    pageUrl.textContent = state.pageUrl ? new URL(state.pageUrl).hostname : '';
+    try {
+      pageUrl.textContent = state.pageUrl ? new URL(state.pageUrl).hostname : '';
+    } catch {
+      pageUrl.textContent = state.pageUrl || '';
+    }
     pageInfo.classList.remove('hidden');
   } else {
     pageInfo.classList.add('hidden');
@@ -197,7 +201,12 @@ async function askFollowUp(question) {
 
   setAnswerState('loading');
 
+  // Получаем credentials
   const creds = await chrome.storage.local.get(['email', 'botId', 'botToken', 'model']);
+  if (!creds.email || !creds.botId || !creds.botToken) {
+    showAnswerError('Необходима авторизация в расширении');
+    return;
+  }
 
   const result = await chrome.runtime.sendMessage({
     action: 'askAI',              // переиспользуем существующий handler
@@ -222,7 +231,6 @@ function markAsStale() {
   // Пользователь может захотеть дочитать текущее резюме
   if (state.status === 'done') {
     setState('stale');
-    showStaleBanner();
   } else if (state.status === 'idle' || state.status === 'error') {
     // Если ещё не загружали — загружаем сразу
     loadSummaryForActivePage();
