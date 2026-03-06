@@ -239,3 +239,73 @@ html, body {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* Блоки кода Markdown */
+.code-block-wrapper {
+  margin: 12px 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1a1a25;
+  border: 1px solid #33333d;
+}
+
+.code-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: #252535;
+  border-bottom: 1px solid #33333d;
+  font-size: 12px;
+  color: #888;
+}
+
+.code-block-language {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-weight: 500;
+}
+
+.code-block-copy-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.code-block-copy-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.code-block-content {
+  padding: 12px;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #f1f1f3;
+  white-space: pre;
+}
+
+/* Инлайн код */
+.inline-code {
+  background: #252535;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  color: #64a0ff;
+}
+
+/* Параграфы в ответах */
+.answer-text p {
+  margin: 0 0 12px;
+}
+
+.answer-text p:last-child {
+  margin-bottom: 0;
+}
