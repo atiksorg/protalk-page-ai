@@ -24,7 +24,25 @@ chrome.runtime.onMessage.addListener((request) => {
   if (request.action === 'pageChanged') {
     markAsStale();
   }
+  if (request.action === 'prefillQuestion') {
+    prefillQuestion(request.question);
+  }
 });
+
+/**
+ * Предзаполнение поля вопроса
+ * @param {string} question 
+ */
+function prefillQuestion(question) {
+  const questionInput = document.getElementById('questionInput');
+  if (questionInput) {
+    questionInput.value = question;
+    // Фокусировка на поле ввода
+    questionInput.focus();
+    // Прокрутка к полю ввода
+    questionInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
 
 function bindUI() {
   document.getElementById('refreshBtn').addEventListener('click', loadSummaryForActivePage);
@@ -284,8 +302,8 @@ function markAsStale() {
 function renderPageText(text) {
   const el = document.getElementById('pageTextContent');
   if (el) {
-    // Простое отображение текста с переносами строк
-    el.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+    // Отображение текста с сохранением форматирования
+    el.textContent = text;
   }
   
   // Добавим обработчики для кнопок действий
@@ -309,6 +327,82 @@ function renderPageText(text) {
   if (summarizeBtn) {
     summarizeBtn.onclick = () => {
       loadSummaryForActivePage();
+    };
+  }
+  
+  // Добавим инлайн кнопки действий
+  const actionsContainer = document.getElementById('pageTextActions');
+  if (actionsContainer) {
+    actionsContainer.innerHTML = `
+      <button id="actionSummarize" class="btn-secondary">Резюме</button>
+      <button id="actionKeyPoints" class="btn-secondary">Ключевые моменты</button>
+      <button id="actionTranslate" class="btn-secondary">Перевод (EN→RU)</button>
+    `;
+    actionsContainer.classList.remove('hidden');
+    
+    document.getElementById('actionSummarize').onclick = () => {
+      // Можно отправить специальный запрос к AI с инструкцией "сделай резюме"
+      loadSummaryForActivePage();
+    };
+    
+    document.getElementById('actionKeyPoints').onclick = async () => {
+      setState('loading');
+      try {
+        const creds = await chrome.storage.local.get(['email', 'botId', 'botToken', 'model']);
+        if (!creds.email || !creds.botId || !creds.botToken) {
+          throw new Error('Необходима авторизация в расширении');
+        }
+        
+        const result = await chrome.runtime.sendMessage({
+          action: 'askAI',
+          email: creds.email,
+          authToken: `${creds.botId}_${creds.botToken}`,
+          model: creds.model || 'x-ai/grok-4.1-fast',
+          question: 'Выдели ключевые моменты и основные идеи из следующего текста:\n\n' + text,
+          pageText: text
+        });
+        
+        if (result?.ok) {
+          state.summary = result.reply;
+          setState('done');
+          renderSummary(result.reply);
+        } else {
+          throw new Error(result?.error || 'Ошибка AI');
+        }
+      } catch (err) {
+        setState('error');
+        showError(err.message);
+      }
+    };
+    
+    document.getElementById('actionTranslate').onclick = async () => {
+      setState('loading');
+      try {
+        const creds = await chrome.storage.local.get(['email', 'botId', 'botToken', 'model']);
+        if (!creds.email || !creds.botId || !creds.botToken) {
+          throw new Error('Необходима авторизация в расширении');
+        }
+        
+        const result = await chrome.runtime.sendMessage({
+          action: 'askAI',
+          email: creds.email,
+          authToken: `${creds.botId}_${creds.botToken}`,
+          model: creds.model || 'x-ai/grok-4.1-fast',
+          question: 'Переведи следующий текст с английского на русский:\n\n' + text,
+          pageText: text
+        });
+        
+        if (result?.ok) {
+          state.summary = result.reply;
+          setState('done');
+          renderSummary(result.reply);
+        } else {
+          throw new Error(result?.error || 'Ошибка AI');
+        }
+      } catch (err) {
+        setState('error');
+        showError(err.message);
+      }
     };
   }
 }
