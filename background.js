@@ -9,6 +9,16 @@ function incrementTokens(tokensUsed) {
   });
 }
 
+// Дебаунс — не спамить запросами на активных SPA
+let navTimer = null;
+function notifySidePanel({ reason, tabId }) {
+  clearTimeout(navTimer);
+  const delay = reason === 'SPA_NAVIGATED' ? 1500 : 400;
+  navTimer = setTimeout(() => {
+    chrome.runtime.sendMessage({ action: 'pageChanged', reason, tabId }).catch(() => {});
+  }, delay);
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'askAI') {
     askAI(request).then(sendResponse).catch(err => {
@@ -25,9 +35,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === 'pageNavigated') {
-    // Можно добавить логику сброса кэша или уведомления
-    console.log('SPA navigation detected:', request.url);
+    notifySidePanel({ reason: 'SPA_NAVIGATED', tabId: sender.tab.id });
     return false;
+  }
+  
+  if (request.action === 'summarizePage') {
+    summarizePage(request)
+      .then(sendResponse)
+      .catch(err => sendResponse({ ok: false, error: err.message }));
+    return true;
   }
 });
 
@@ -92,6 +108,80 @@ async function askAI({ email, authToken, model, question, pageText }) {
       error: error.message
     };
   }
+}
+
+function buildSummaryPrompt(pageText) {
+  return `
+Проанализируй текст страницы и дай структурированное резюме.
+
+Текст страницы:
+${pageText.slice(0, 4000)}
+
+Ответь СТРОГО в следующем формате (используй именно эти заголовки):
+
+**О чём страница:**
+[одно предложение — суть материала]
+
+**Ключевые моменты:**
+• [пункт 1]
+• [пункт 2]
+• [пункт 3]
+• [пункт 4 — если есть]
+• [пункт 5 — если есть]
+
+**Вывод:**
+[одно предложение — зачем это читать или что с этим делать]
+
+Правила:
+- Каждый пункт — максимум одно предложение
+- Без вводных слов типа "Данная статья..."
+- Если страница — не статья (форма, приложение, 404) — напиши об этом кратко
+  `.trim();
+}
+
+/**
+ * Функция резюмирования страницы
+ * @param {Object} request 
+ * @returns {Promise<Object>}
+ */
+async function summarizePage({ email, authToken, model, pageText }) {
+  const url = 'https://ai.pro-talk.ru/api/router';
+
+  const payload = {
+    base_url: 'https://openrouter.ai/api/v1/chat/completions',
+    platform: 'ProTalk',
+    user_email: email,
+    model: model,
+    stream: false,
+    max_tokens: 600,
+    temperature: 0.3,
+    messages: [{
+      role: 'user',
+      content: buildSummaryPrompt(pageText)
+    }]
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${authToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error?.message || `HTTP ${response.status}`);
+  }
+
+  const reply = data.choices?.[0]?.message?.content || '';
+  const tokensUsed = (data.usage?.prompt_tokens || 0) + (data.usage?.completion_tokens || 0);
+
+  incrementTokens(tokensUsed);
+
+  return { ok: true, summary: reply, tokensUsed };
 }
 
 /**
