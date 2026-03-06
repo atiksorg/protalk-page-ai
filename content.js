@@ -855,9 +855,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Загрузка настроек Input Assistant
 chrome.storage.local.get(['inputAssistantEnabled'], (result) => {
-  inputAssistantEnabled = result.inputAssistantEnabled || false;
+  // Включаем по умолчанию
+  inputAssistantEnabled = result.inputAssistantEnabled !== undefined ? result.inputAssistantEnabled : true;
   if (inputAssistantEnabled) {
     initInputAssistant();
+    // Для проверки: покажем количество полей ввода
+    setTimeout(() => {
+      const fields = document.querySelectorAll('input, textarea');
+      const count = Array.from(fields).filter(shouldAttachButton).length;
+      console.log(`[ProTalk AI] Input Assistant активен. Найдено полей для ввода: ${count}`);
+      // В будущем можно добавить UI-индикатор в панель
+    }, 1000); // Небольшая задержка, чтобы страница точно загрузилась
   }
 });
 
