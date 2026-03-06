@@ -60,6 +60,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch(err => sendResponse({ ok: false, error: err.message }));
     return true;
   }
+  
+  if (request.action === 'openSidePanel') {
+    // Открываем боковую панель для текущей вкладки
+    chrome.sidePanel.open({ windowId: sender.tab.windowId });
+    sendResponse({ ok: true });
+    return true;
+  }
 });
 
 async function askAI({ email, authToken, model, question, pageText }) {
