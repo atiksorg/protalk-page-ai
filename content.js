@@ -276,7 +276,7 @@ function positionButton(wrapper, field) {
 }
 
 /**
- * Создание мини-попапа в Shadow DOM
+ * Создание мини-попапа в Shadow DOM (тёмная тема)
  * @returns {Object}
  */
 function createMiniPopup() {
@@ -291,52 +291,206 @@ function createMiniPopup() {
   
   const style = document.createElement('style');
   style.textContent = `
-    .mini-popup {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      min-width: 200px;
-      overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 14px;
+    :host {
+      all: initial;
     }
-    .mini-popup-item {
+    
+    .mini-popup {
+      background: linear-gradient(135deg, #1a1a24 0%, #0f0f13 100%);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(99, 102, 241, 0.2);
+      min-width: 260px;
+      max-width: 320px;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      animation: popupSlideIn 0.2s ease-out;
+    }
+    
+    @keyframes popupSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .mini-popup-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 14px;
+    }
+    
+    .mini-popup-header-icon {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    
+    .mini-popup-header-title {
+      color: #f8f8fa;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    
+    .mini-popup-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
       cursor: pointer;
-      transition: background 0.15s ease;
+      transition: all 0.15s ease;
       border: none;
-      background: none;
+      background: transparent;
       width: 100%;
       text-align: left;
-      font-size: inherit;
+      font-size: 14px;
+      position: relative;
+      overflow: hidden;
     }
+    
+    .mini-popup-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    
+    .mini-popup-item:hover::before {
+      opacity: 1;
+    }
+    
     .mini-popup-item:hover {
-      background: #f5f5f5;
+      background: rgba(99, 102, 241, 0.1);
     }
+    
     .mini-popup-item:active {
-      background: #e8e8e8;
+      background: rgba(99, 102, 241, 0.2);
     }
+    
     .mini-popup-item:not(:last-child) {
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
     }
+    
     .mini-popup-icon {
-      font-size: 16px;
-    }
-    .mini-popup-label {
-      color: #333;
-    }
-    .mini-popup-loading {
-      padding: 16px;
+      font-size: 18px;
+      width: 24px;
       text-align: center;
-      color: #666;
+      flex-shrink: 0;
     }
+    
+    .mini-popup-label {
+      color: #f8f8fa;
+      font-weight: 500;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .mini-popup-label-hint {
+      color: #9ca3af;
+      font-size: 11px;
+      font-weight: 400;
+      display: block;
+      margin-top: 2px;
+    }
+    
+    .mini-popup-loading {
+      padding: 20px;
+      text-align: center;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .mini-popup-loading-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(99, 102, 241, 0.3);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
     .mini-popup-error {
-      padding: 12px;
-      color: #d32f2f;
-      background: #ffebee;
+      padding: 14px;
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.15);
+      border-top: 1px solid rgba(239, 68, 68, 0.3);
+      font-size: 13px;
+    }
+    
+    .mini-popup-input-wrapper {
+      padding: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .mini-popup-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #f8f8fa;
+      font-size: 13px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+    
+    .mini-popup-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+    
+    .mini-popup-input::placeholder {
+      color: #6b7280;
+    }
+    
+    .mini-popup-submit {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    .mini-popup-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+    
+    .mini-popup-submit:active {
+      transform: translateY(0);
     }
   `;
   
@@ -373,7 +527,7 @@ function createMiniPopup() {
 }
 
 /**
- * Рендер элементов мини-попапа
+ * Рендер элементов мини-попапа (тёмная тема)
  * @param {Element} container 
  * @param {Array} items 
  */
@@ -382,34 +536,34 @@ function renderMiniPopupItems(container, items) {
   
   items.forEach(item => {
     if (item.type === 'input') {
-      // Специальный случай для поля ввода
+      // Специальный случай для поля ввода с улучшенным UI
       const wrapper = document.createElement('div');
-      wrapper.style.padding = '10px 14px';
+      wrapper.className = 'mini-popup-input-wrapper';
       
       const input = document.createElement('input');
       input.type = 'text';
-      input.placeholder = item.placeholder || 'Введите задачу для ИИ...';
-      input.style.width = '100%';
-      input.style.padding = '6px 8px';
-      input.style.border = '1px solid #ddd';
-      input.style.borderRadius = '4px';
-      input.style.fontSize = '13px';
-      input.style.boxSizing = 'border-box';
+      input.className = 'mini-popup-input';
+      input.placeholder = item.placeholder || 'Опишите задачу для ИИ...';
       
       const submitBtn = document.createElement('button');
-      submitBtn.textContent = 'Заполнить';
-      submitBtn.style.marginTop = '8px';
-      submitBtn.style.padding = '4px 10px';
-      submitBtn.style.fontSize = '12px';
+      submitBtn.className = 'mini-popup-submit';
+      submitBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+        </svg>
+        Заполнить с ИИ
+      `;
       
       submitBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        item.action(input.value);
+        if (input.value.trim()) {
+          item.action(input.value);
+        }
       });
       
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && input.value.trim()) {
           e.preventDefault();
           item.action(input.value);
         }
@@ -420,7 +574,7 @@ function renderMiniPopupItems(container, items) {
       container.appendChild(wrapper);
       
       // Фокус на поле ввода
-      setTimeout(() => input.focus(), 10);
+      setTimeout(() => input.focus(), 50);
     } else {
       // Обычный пункт меню
       const btn = document.createElement('button');
@@ -663,7 +817,7 @@ async function assistWithCustomPrompt(field, userPrompt, popup, closePopup) {
   const container = popup.shadowRoot?.querySelector('.mini-popup');
   if (!container) return;
 
-  container.innerHTML = '<div class="mini-popup-loading">⏳ Генерация...</div>';
+  container.innerHTML = '<div class="mini-popup-loading"><div class="mini-popup-loading-spinner"></div>Генерация...</div>';
   
   try {
     const ctx = getFieldContext(field);
@@ -708,7 +862,7 @@ async function assistSingleField(field, popup, closePopup) {
   const container = popup.shadowRoot?.querySelector('.mini-popup');
   if (!container) return;
 
-  container.innerHTML = '<div class="mini-popup-loading">⏳ Генерация...</div>';
+  container.innerHTML = '<div class="mini-popup-loading"><div class="mini-popup-loading-spinner"></div>Генерация...</div>';
   
   try {
     const ctx = getFieldContext(field);
@@ -753,7 +907,7 @@ async function improveFieldText(field, popup, closePopup) {
   const container = popup.shadowRoot?.querySelector('.mini-popup');
   if (!container) return;
 
-  container.innerHTML = '<div class="mini-popup-loading">⏳ Улучшение...</div>';
+  container.innerHTML = '<div class="mini-popup-loading"><div class="mini-popup-loading-spinner"></div>Улучшение...</div>';
   
   try {
     const ctx = getFieldContext(field);
@@ -796,7 +950,7 @@ URL: ${location.href}
 async function assistWholeForm(form, popup, closePopup) {
   const container = popup.shadowRoot?.querySelector('.mini-popup');
   if (!container) return;
-  container.innerHTML = '<div class="mini-popup-loading">⏳ Анализ формы...</div>';
+  container.innerHTML = '<div class="mini-popup-loading"><div class="mini-popup-loading-spinner"></div>Анализ формы...</div>';
   
   try {
     const ctx = getFormContext(form);
