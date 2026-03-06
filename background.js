@@ -67,6 +67,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
+  
+  if (request.action === 'openSidePanelWithQuestion') {
+    // Открываем боковую панель и предзаполняем вопрос
+    chrome.sidePanel.open({ windowId: sender.tab.windowId }).then(() => {
+      // Небольшая задержка, чтобы панель успела открыться
+      setTimeout(() => {
+        chrome.runtime.sendMessage({
+          action: 'prefillQuestion',
+          question: request.question
+        }).catch(() => {});
+      }, 300);
+    });
+    sendResponse({ ok: true });
+    return true;
+  }
 });
 
 async function askAI({ email, authToken, model, question, pageText }) {
