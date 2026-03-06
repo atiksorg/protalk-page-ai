@@ -48,7 +48,12 @@
           <button id="copyPageTextBtn" class="btn-secondary">Копировать текст</button>
           <button id="summarizePageBtn" class="btn-primary">Анализировать страницу</button>
         </div>
-        <div id="pageTextContent" class="page-text-content"></div>
+        <div class="markdown-body">
+          <pre id="pageTextContent" class="page-text-content"></pre>
+        </div>
+        <div id="pageTextActions" class="page-text-actions hidden">
+          <!-- Кнопки действий будут добавлены сюда динамически -->
+        </div>
       </div>
 
       <!-- done / stale — резюме -->
