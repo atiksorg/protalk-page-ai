@@ -192,16 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response && response.ok) {
           responseText.textContent = response.reply;
           responseSection.style.display = 'block';
-          
-          // Обновляем статистику токенов
-          if (response.tokensUsed) {
-            chrome.storage.local.get(['totalTokens'], (result) => {
-              const newTotal = (result.totalTokens || 0) + response.tokensUsed;
-              chrome.storage.local.set({ totalTokens: newTotal }, () => {
-                loadSettings();
-              });
-            });
-          }
+          loadSettings();
         } else {
           responseText.textContent = 'Ошибка: ' + (response?.error || 'Неизвестная ошибка');
           responseSection.style.display = 'block';
