@@ -401,6 +401,18 @@ function renderMiniPopupItems(container, items) {
 }
 
 /**
+ * Получение краткого описания поля для отображения в UI
+ * @param {Element} field 
+ * @returns {string}
+ */
+function getFieldLabelForUI(field) {
+  return field.getAttribute('aria-label') ||
+    document.querySelector(`label[for="${field.id}"]`)?.textContent?.trim() ||
+    field.placeholder ||
+    'поле';
+}
+
+/**
  * Позиционирование попапа
  * @param {Element} popup 
  * @param {Element} anchor 
@@ -453,11 +465,12 @@ function showMiniPopup(field, anchorBtn) {
   activeMiniPopupCleanup = cleanup;
   
   const form = field.closest('form');
+  const fieldLabel = getFieldLabelForUI(field);
   
   const items = [
     {
       icon: '💡',
-      label: `Заполнить поле`,
+      label: `Заполнить: ${fieldLabel}`,
       action: () => assistSingleField(field, popup, cleanup)
     }
   ];
@@ -616,6 +629,7 @@ URL: ${location.href}
  */
 async function assistWholeForm(form, popup, closePopup) {
   const container = popup.shadowRoot?.querySelector('.mini-popup');
+  if (!container) return;
   container.innerHTML = '<div class="mini-popup-loading">⏳ Анализ формы...</div>';
   
   try {
@@ -807,10 +821,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (fieldObserver) {
         fieldObserver.disconnect();
         fieldObserver = null;
-      }
-      if (spaNavigationObserver) {
-        spaNavigationObserver.disconnect();
-        spaNavigationObserver = null;
       }
       if (activeMiniPopupCleanup) {
         activeMiniPopupCleanup();
