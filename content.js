@@ -406,8 +406,8 @@ function renderMiniPopupItems(container, items) {
  * @returns {string}
  */
 function getFieldLabelForUI(field) {
-  return field.getAttribute('aria-label') ||
-    document.querySelector(`label[for="${field.id}"]`)?.textContent?.trim() ||
+  return document.querySelector(`label[for="${field.id}"]`)?.textContent?.trim() ||
+    field.getAttribute('aria-label') ||
     field.placeholder ||
     'поле';
 }
@@ -575,7 +575,10 @@ URL: ${location.href}
     
     closePopup();
   } catch (err) {
-    container.innerHTML = `<div class="mini-popup-error">❌ ${err.message}</div>`;
+    const errDiv = document.createElement('div');
+    errDiv.className = 'mini-popup-error';
+    errDiv.textContent = `❌ ${err.message}`;
+    container.replaceChildren(errDiv);
     setTimeout(() => closePopup(), 2000);
   }
 }
@@ -617,7 +620,10 @@ URL: ${location.href}
     
     closePopup();
   } catch (err) {
-    container.innerHTML = `<div class="mini-popup-error">❌ ${err.message}</div>`;
+    const errDiv = document.createElement('div');
+    errDiv.className = 'mini-popup-error';
+    errDiv.textContent = `❌ ${err.message}`;
+    container.replaceChildren(errDiv);
     setTimeout(() => closePopup(), 2000);
   }
 }
@@ -678,7 +684,10 @@ ${ctx.fields.map((f, i) =>
     
     closePopup();
   } catch (err) {
-    container.innerHTML = `<div class="mini-popup-error">❌ ${err.message}</div>`;
+    const errDiv = document.createElement('div');
+    errDiv.className = 'mini-popup-error';
+    errDiv.textContent = `❌ ${err.message}`;
+    container.replaceChildren(errDiv);
     setTimeout(() => closePopup(), 2000);
   }
 }
