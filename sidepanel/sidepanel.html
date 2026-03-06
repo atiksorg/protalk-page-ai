@@ -42,6 +42,15 @@
         <p class="hint">Анализирую страницу...</p>
       </div>
 
+      <!-- pageText — отображение текста страницы -->
+      <div id="statePageText" class="state-block hidden">
+        <div class="page-text-header">
+          <button id="copyPageTextBtn" class="btn-secondary">Копировать текст</button>
+          <button id="summarizePageBtn" class="btn-primary">Анализировать страницу</button>
+        </div>
+        <div id="pageTextContent" class="page-text-content"></div>
+      </div>
+
       <!-- done / stale — резюме -->
       <div id="stateSummary" class="state-block hidden">
         <div id="summaryContent" class="summary-content"></div>
