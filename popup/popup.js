@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tokenStat = document.getElementById('tokenStat');
   const modelSelect = document.getElementById('modelSelect');
   const totalTokens = document.getElementById('totalTokens');
+  const inputAssistantToggle = document.getElementById('inputAssistantToggle');
   
   const questionInput = document.getElementById('questionInput');
   const pageTextPreview = document.getElementById('pageTextPreview');
@@ -49,14 +50,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadSettings() {
-    chrome.storage.local.get(['model', 'totalTokens'], (result) => {
+    chrome.storage.local.get(['model', 'totalTokens', 'inputAssistantEnabled'], (result) => {
       const model = result.model || 'x-ai/grok-4.1-fast';
       const tokens = result.totalTokens || 0;
+      const inputAssistant = result.inputAssistantEnabled || false;
       
       currentModel.textContent = model;
       modelSelect.value = model;
       tokenStat.textContent = `${tokens} токенов`;
       totalTokens.textContent = tokens;
+      inputAssistantToggle.checked = inputAssistant;
     });
   }
 
@@ -115,6 +118,26 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.set({ model }, () => {
       currentModel.textContent = model;
       loadSettings();
+    });
+  });
+
+  // Переключатель Input Assistant
+  inputAssistantToggle.addEventListener('change', () => {
+    const enabled = inputAssistantToggle.checked;
+    chrome.storage.local.set({ inputAssistantEnabled: enabled }, () => {
+      // Отправляем сообщение в активную вкладку
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, { 
+            action: 'setInputAssistant', 
+            enabled: enabled 
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.log('Could not send message to content script:', chrome.runtime.lastError);
+            }
+          });
+        }
+      });
     });
   });
 
