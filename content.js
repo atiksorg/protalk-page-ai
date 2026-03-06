@@ -86,14 +86,16 @@ function extractVisibleText() {
  * Отслеживание SPA-навигации
  */
 let lastUrl = location.href;
+let spaNavigationObserver = null;
 
 function initSPANavigationTracking() {
-  new MutationObserver(() => {
+  spaNavigationObserver = new MutationObserver(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       chrome.runtime.sendMessage({ action: 'pageNavigated', url: lastUrl });
     }
-  }).observe(document.body, { childList: true, subtree: true });
+  });
+  spaNavigationObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 // ============================================
@@ -377,10 +379,18 @@ function renderMiniPopupItems(container, items) {
   items.forEach(item => {
     const btn = document.createElement('button');
     btn.className = 'mini-popup-item';
-    btn.innerHTML = `
-      <span class="mini-popup-icon">${item.icon}</span>
-      <span class="mini-popup-label">${item.label}</span>
-    `;
+    
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'mini-popup-icon';
+    iconSpan.textContent = item.icon;
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'mini-popup-label';
+    labelSpan.textContent = item.label;
+
+    btn.appendChild(iconSpan);
+    btn.appendChild(labelSpan);
+    
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -442,23 +452,22 @@ function showMiniPopup(field, anchorBtn) {
   const { popup, container, cleanup, setCloseHandler } = createMiniPopup();
   activeMiniPopupCleanup = cleanup;
   
-  const ctx = getFieldContext(field);
   const form = field.closest('form');
-  const hasValue = field.value?.trim().length > 0;
   
   const items = [
     {
       icon: '💡',
-      label: `Заполнить: ${ctx.label || ctx.placeholder || 'это поле'}`,
-      action: () => assistSingleField(field, ctx, popup, cleanup)
+      label: `Заполнить поле`,
+      action: () => assistSingleField(field, popup, cleanup)
     }
   ];
   
-  if (hasValue) {
+  // Кнопка "Улучшить" будет добавляться динамически
+  if (field.value?.trim().length > 0) {
     items.push({
       icon: '✏️',
       label: 'Улучшить текст',
-      action: () => improveFieldText(field, ctx, popup, cleanup)
+      action: () => improveFieldText(field, popup, cleanup)
     });
   }
   
@@ -522,13 +531,14 @@ async function sendToAI(prompt) {
  * @param {Object} ctx 
  * @param {Element} popup 
  */
-async function assistSingleField(field, ctx, popup, closePopup) {
+async function assistSingleField(field, popup, closePopup) {
   const container = popup.shadowRoot?.querySelector('.mini-popup');
   if (!container) return;
 
   container.innerHTML = '<div class="mini-popup-loading">⏳ Генерация...</div>';
   
   try {
+    const ctx = getFieldContext(field);
     const pageText = extractVisibleText();
     
     const prompt = `
@@ -563,13 +573,14 @@ URL: ${location.href}
  * @param {Object} ctx 
  * @param {Element} popup 
  */
-async function improveFieldText(field, ctx, popup, closePopup) {
+async function improveFieldText(field, popup, closePopup) {
   const container = popup.shadowRoot?.querySelector('.mini-popup');
   if (!container) return;
 
   container.innerHTML = '<div class="mini-popup-loading">⏳ Улучшение...</div>';
   
   try {
+    const ctx = getFieldContext(field);
     const pageText = extractVisibleText();
     
     const prompt = `
@@ -604,7 +615,7 @@ URL: ${location.href}
  * @param {Element} popup 
  */
 async function assistWholeForm(form, popup, closePopup) {
-  const container = popup.shadowRoot.querySelector('.mini-popup');
+  const container = popup.shadowRoot?.querySelector('.mini-popup');
   container.innerHTML = '<div class="mini-popup-loading">⏳ Анализ формы...</div>';
   
   try {
@@ -796,6 +807,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (fieldObserver) {
         fieldObserver.disconnect();
         fieldObserver = null;
+      }
+      if (spaNavigationObserver) {
+        spaNavigationObserver.disconnect();
+        spaNavigationObserver = null;
       }
       if (activeMiniPopupCleanup) {
         activeMiniPopupCleanup();
