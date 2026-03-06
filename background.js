@@ -1,5 +1,14 @@
 'use strict';
 
+function incrementTokens(tokensUsed) {
+  if (!tokensUsed) return;
+
+  chrome.storage.local.get(['totalTokens'], (result) => {
+    const newTotal = (result.totalTokens || 0) + tokensUsed;
+    chrome.storage.local.set({ totalTokens: newTotal });
+  });
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'askAI') {
     askAI(request).then(sendResponse).catch(err => {
@@ -67,6 +76,8 @@ async function askAI({ email, authToken, model, question, pageText }) {
         tokensUsed = (data.usage.prompt_tokens || 0) + (data.usage.completion_tokens || 0);
       }
 
+      incrementTokens(tokensUsed);
+
       return {
         ok: true,
         reply: reply,
@@ -131,13 +142,9 @@ async function assistField({ email, authToken, model, prompt }) {
       let tokensUsed = 0;
       if (data.usage) {
         tokensUsed = (data.usage.prompt_tokens || 0) + (data.usage.completion_tokens || 0);
-        
-        // Обновляем статистику токенов
-        chrome.storage.local.get(['totalTokens'], (result) => {
-          const newTotal = (result.totalTokens || 0) + tokensUsed;
-          chrome.storage.local.set({ totalTokens: newTotal });
-        });
       }
+
+      incrementTokens(tokensUsed);
 
       return {
         ok: true,
