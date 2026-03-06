@@ -13,7 +13,10 @@ let state = {
 // ── Инициализация ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   bindUI();
-  loadSummaryForActivePage();
+  // Не анализируем страницу сразу, ждем действий пользователя
+  // loadSummaryForActivePage();
+  // Вместо этого, загрузим текст страницы для отображения
+  loadPageTextOnly();
 });
 
 // ── Смена страницы (сигнал от background) ──────────────
@@ -61,6 +64,7 @@ function setState(newStatus) {
   const stateMap = {
     idle: 'stateIdle',
     loading: 'stateLoading',
+    pageText: 'statePageText', // Новое состояние
     done: 'stateSummary',
     error: 'stateError',
     stale: 'stateSummary'
@@ -137,6 +141,45 @@ function setAnswerState(status) {
 
 function renderAnswer(text) {
   document.getElementById('answerText').innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+}
+
+/**
+ * Загрузка только текста страницы без анализа
+ */
+async function loadPageTextOnly() {
+  setState('loading');
+
+  try {
+    // 1. Получаем активную вкладку
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) throw new Error('Не удалось определить активную вкладку');
+
+    // 2. Получаем текст страницы через content.js
+    let pageData;
+    try {
+      pageData = await chrome.tabs.sendMessage(tab.id, { action: 'getPageText' });
+    } catch {
+      throw new Error('Страница недоступна. Попробуйте обновить её.');
+    }
+
+    if (!pageData?.text?.trim()) {
+      throw new Error('Страница не содержит текста для анализа');
+    }
+
+    // 3. Сохраняем текст и метаинформацию
+    state.pageText = pageData.text;
+    state.pageTitle = tab.title || '';
+    state.pageUrl = tab.url || '';
+    updatePageInfo();
+
+    // 4. Отображаем текст страницы
+    setState('pageText');
+    renderPageText(pageData.text);
+
+  } catch (err) {
+    setState('error');
+    showError(err.message);
+  }
 }
 
 async function loadSummaryForActivePage() {
@@ -236,6 +279,38 @@ function markAsStale() {
     loadSummaryForActivePage();
   }
   // Если status === 'loading' — не прерываем текущий запрос
+}
+
+function renderPageText(text) {
+  const el = document.getElementById('pageTextContent');
+  if (el) {
+    // Простое отображение текста с переносами строк
+    el.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+  }
+  
+  // Добавим обработчики для кнопок действий
+  const copyBtn = document.getElementById('copyPageTextBtn');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(text).then(() => {
+        // Визуальная обратная связь
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✓ Скопировано!';
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+        }, 2000);
+      }).catch(err => {
+        console.error('Ошибка копирования: ', err);
+      });
+    };
+  }
+  
+  const summarizeBtn = document.getElementById('summarizePageBtn');
+  if (summarizeBtn) {
+    summarizeBtn.onclick = () => {
+      loadSummaryForActivePage();
+    };
+  }
 }
 
 function renderSummary(rawText) {
