@@ -25,10 +25,13 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
 });
 
 // Слушатель завершения загрузки страницы
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.active) {
-    notifySidePanel({ reason: 'PAGE_LOADED', tabId });
-  }
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status !== 'complete') return;
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]?.id === tabId) {
+      notifySidePanel({ reason: 'PAGE_LOADED', tabId });
+    }
+  });
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
