@@ -19,6 +19,18 @@ function notifySidePanel({ reason, tabId }) {
   }, delay);
 }
 
+// Слушатель смены активной вкладки
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+  notifySidePanel({ reason: 'TAB_CHANGED', tabId });
+});
+
+// Слушатель завершения загрузки страницы
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.active) {
+    notifySidePanel({ reason: 'PAGE_LOADED', tabId });
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'askAI') {
     askAI(request).then(sendResponse).catch(err => {
