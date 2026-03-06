@@ -84,13 +84,27 @@
       <!-- pageText — отображение текста страницы -->
       <div id="statePageText" class="state-block hidden">
         <div class="page-text-header">
-          <button id="copyPageTextBtn" class="btn-secondary">
+          <div class="page-text-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Текст страницы
+          </div>
+          <button id="copyPageTextBtn" class="icon-btn" title="Копировать текст">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
             </svg>
-            Копировать текст
           </button>
+        </div>
+        <div class="page-text-wrapper">
+          <textarea id="pageTextContent" class="page-textarea" readonly placeholder="Текст страницы будет отображён здесь..."></textarea>
+        </div>
+        <div class="page-text-actions">
           <button id="summarizePageBtn" class="btn-primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
@@ -98,11 +112,8 @@
             Анализировать страницу
           </button>
         </div>
-        <div class="markdown-body">
-          <pre id="pageTextContent" class="page-text-content"></pre>
-        </div>
-        <div id="pageTextActions" class="page-text-actions hidden">
-          <!-- Кнопки действий будут добавлены сюда динамически -->
+        <div id="pageTextQuickActions" class="quick-actions hidden">
+          <!-- Кнопки быстрых действий будут добавлены сюда динамически -->
         </div>
       </div>
 
