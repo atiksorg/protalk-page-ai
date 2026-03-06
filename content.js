@@ -706,12 +706,12 @@ function showMiniPopup(field, anchorBtn) {
   
   const items = [
     {
-      icon: '💡',
-      label: `Заполнить: ${fieldLabel}`,
+      icon: '⚡',
+      label: 'Автозаполнение',
       action: () => assistSingleField(field, popup, cleanup)
     },
     {
-      icon: '❓',
+      icon: '💬',
       label: 'Спросить ИИ',
       action: () => openSidePanelWithQuestion(field)
     }
@@ -756,22 +756,16 @@ async function openSidePanelWithQuestion(field) {
   const ctx = getFieldContext(field);
   const fieldName = ctx.label || ctx.placeholder || ctx.name || 'это поле';
   
-  // Открываем боковую панель
-  await chrome.runtime.sendMessage({ action: 'openSidePanel' });
-  
-  // Отправляем сообщение в боковую панель для предзаполнения
-  // Нужно немного подождать, пока панель откроется
-  setTimeout(() => {
-    chrome.runtime.sendMessage({
-      action: 'prefillQuestion',
-      question: `Как заполнить поле "${fieldName}"?`
-    });
-  }, 500);
-  
   // Закрываем текущий попап
   if (activeMiniPopupCleanup) {
     activeMiniPopupCleanup();
   }
+  
+  // Отправляем сообщение в background для открытия панели и предзаполнения
+  await chrome.runtime.sendMessage({
+    action: 'openSidePanelWithQuestion',
+    question: `Как заполнить поле "${fieldName}"?`
+  });
 }
 
 /**
@@ -1037,7 +1031,7 @@ function attachButton(field) {
   btn.addEventListener('mousedown', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    showMiniPopupWithInput(field, btn);
+    showMiniPopup(field, btn);
   }, { signal });
   
   document.body.appendChild(wrapper);
