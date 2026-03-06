@@ -158,7 +158,90 @@ function setAnswerState(status) {
 }
 
 function renderAnswer(text) {
-  document.getElementById('answerText').innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+  const html = parseMarkdown(text);
+  document.getElementById('answerText').innerHTML = html;
+  
+  // Добавляем обработчики для кнопок копирования
+  document.querySelectorAll('.code-block-copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const codeBlock = btn.closest('.code-block-wrapper').querySelector('.code-block-content');
+      if (codeBlock) {
+        navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+          const originalText = btn.textContent;
+          btn.textContent = '✓ Скопировано!';
+          setTimeout(() => {
+            btn.textContent = originalText;
+          }, 2000);
+        }).catch(err => {
+          console.error('Ошибка копирования: ', err);
+        });
+      }
+    });
+  });
+}
+
+/**
+ * Парсинг Markdown текста с поддержкой блоков кода
+ * @param {string} text 
+ * @returns {string}
+ */
+function parseMarkdown(text) {
+  // Сначала экранируем HTML
+  let escaped = escapeHtml(text);
+  
+  // Парсим блоки кода ```language ... ```
+  const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+  let result = '';
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = codeBlockRegex.exec(escaped)) !== null) {
+    // Добавляем текст до блока кода
+    result += processInlineMarkdown(escaped.slice(lastIndex, match.index));
+    
+    const language = match[1] || 'text';
+    const code = match[2];
+    
+    result += `
+      <div class="code-block-wrapper">
+        <div class="code-block-header">
+          <span class="code-block-language">${language}</span>
+          <button class="code-block-copy-btn">Копировать</button>
+        </div>
+        <div class="code-block-content">${code}</div>
+      </div>
+    `;
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Добавляем оставшийся текст после последнего блока кода
+  result += processInlineMarkdown(escaped.slice(lastIndex));
+  
+  return result;
+}
+
+/**
+ * Обработка инлайн Markdown (жирный, курсив, инлайн код)
+ * @param {string} text 
+ * @returns {string}
+ */
+function processInlineMarkdown(text) {
+  let result = text;
+  
+  // Инлайн код `...`
+  result = result.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+  
+  // Жирный **...**
+  result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  
+  // Курсив *...*
+  result = result.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  
+  // Заменяем переносы строк на <br>, но не внутри параграфов
+  result = result.replace(/\n/g, '<br>');
+  
+  return result;
 }
 
 /**
@@ -302,8 +385,8 @@ function markAsStale() {
 function renderPageText(text) {
   const el = document.getElementById('pageTextContent');
   if (el) {
-    // Отображение текста с сохранением форматирования
-    el.textContent = text;
+    // Отображение текста с сохранением форматирования в блоке кода
+    el.innerHTML = `<code>${escapeHtml(text)}</code>`;
   }
   
   // Добавим обработчики для кнопок действий
