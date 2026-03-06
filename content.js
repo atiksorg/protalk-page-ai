@@ -450,7 +450,7 @@ function showMiniPopup(field, anchorBtn) {
     {
       icon: '💡',
       label: `Заполнить: ${ctx.label || ctx.placeholder || 'это поле'}`,
-      action: () => assistSingleField(field, ctx, cleanup)
+      action: () => assistSingleField(field, ctx, popup, cleanup)
     }
   ];
   
@@ -458,7 +458,7 @@ function showMiniPopup(field, anchorBtn) {
     items.push({
       icon: '✏️',
       label: 'Улучшить текст',
-      action: () => improveFieldText(field, ctx, cleanup)
+      action: () => improveFieldText(field, ctx, popup, cleanup)
     });
   }
   
@@ -481,7 +481,7 @@ function showMiniPopup(field, anchorBtn) {
     }
   };
   setCloseHandler(closeHandler);
-  setTimeout(() => document.addEventListener('mousedown', closeHandler), 0);
+  document.addEventListener('mousedown', closeHandler);
 }
 
 /**
@@ -522,9 +522,8 @@ async function sendToAI(prompt) {
  * @param {Object} ctx 
  * @param {Element} popup 
  */
-async function assistSingleField(field, ctx, closePopup) {
-  const popup = document.querySelector('.protalk-mini-popup-wrapper');
-  const container = popup?.shadowRoot?.querySelector('.mini-popup');
+async function assistSingleField(field, ctx, popup, closePopup) {
+  const container = popup.shadowRoot?.querySelector('.mini-popup');
   if (!container) return;
 
   container.innerHTML = '<div class="mini-popup-loading">⏳ Генерация...</div>';
@@ -564,9 +563,8 @@ URL: ${location.href}
  * @param {Object} ctx 
  * @param {Element} popup 
  */
-async function improveFieldText(field, ctx, closePopup) {
-  const popup = document.querySelector('.protalk-mini-popup-wrapper');
-  const container = popup?.shadowRoot?.querySelector('.mini-popup');
+async function improveFieldText(field, ctx, popup, closePopup) {
+  const container = popup.shadowRoot?.querySelector('.mini-popup');
   if (!container) return;
 
   container.innerHTML = '<div class="mini-popup-loading">⏳ Улучшение...</div>';
@@ -714,6 +712,7 @@ function attachButton(field) {
     controller.abort();
     wrapper.remove();
     fieldCleanupMap.delete(field);
+    attachedFields.delete(field);
   };
 
   fieldCleanupMap.set(field, cleanup);
