@@ -153,6 +153,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Открытие side panel
+  document.getElementById('sidePanelBtn').addEventListener('click', () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.sidePanel.open({ tabId: tabs[0].id });
+      window.close(); // закрыть popup
+    });
+  });
+
   // Запрос к ИИ
   askBtn.addEventListener('click', () => {
     const question = questionInput.value.trim();
