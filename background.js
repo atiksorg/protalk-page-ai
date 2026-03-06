@@ -7,6 +7,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // для асинхронного ответа
   }
+  
+  if (request.action === 'assistField') {
+    assistField(request).then(sendResponse).catch(err => {
+      sendResponse({ ok: false, error: err.message });
+    });
+    return true;
+  }
+  
+  if (request.action === 'pageNavigated') {
+    // Можно добавить логику сброса кэша или уведомления
+    console.log('SPA navigation detected:', request.url);
+    return false;
+  }
 });
 
 async function askAI({ email, authToken, model, question, pageText }) {
@@ -52,6 +65,78 @@ async function askAI({ email, authToken, model, question, pageText }) {
       let tokensUsed = 0;
       if (data.usage) {
         tokensUsed = (data.usage.prompt_tokens || 0) + (data.usage.completion_tokens || 0);
+      }
+
+      return {
+        ok: true,
+        reply: reply,
+        tokensUsed: tokensUsed
+      };
+    } else {
+      throw new Error('Нет ответов от модели');
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Обработчик для Input Assistant
+ * @param {Object} request 
+ * @returns {Promise<Object>}
+ */
+async function assistField({ email, authToken, model, prompt }) {
+  const url = 'https://ai.pro-talk.ru/api/router';
+  
+  const payload = {
+    base_url: 'https://openrouter.ai/api/v1/chat/completions',
+    platform: 'ProTalk',
+    user_email: email,
+    model: model,
+    messages: [
+      {
+        role: 'user',
+        content: prompt
+      }
+    ],
+    temperature: 0.5,
+    max_tokens: 512,
+    stream: false
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || `HTTP ${response.status}`);
+    }
+
+    if (data.choices && data.choices.length > 0) {
+      const message = data.choices[0].message;
+      const reply = message.content || '';
+      
+      // Подсчет токенов
+      let tokensUsed = 0;
+      if (data.usage) {
+        tokensUsed = (data.usage.prompt_tokens || 0) + (data.usage.completion_tokens || 0);
+        
+        // Обновляем статистику токенов
+        chrome.storage.local.get(['totalTokens'], (result) => {
+          const newTotal = (result.totalTokens || 0) + tokensUsed;
+          chrome.storage.local.set({ totalTokens: newTotal });
+        });
       }
 
       return {
