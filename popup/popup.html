@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ProTalk Page AI</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🤖 ProTalk AI</div>
+      <button id="settingsBtn" class="icon-btn" title="Настройки">⚙️</button>
+    </div>
+
+    <div id="authSection" class="section">
+      <h2>Авторизация</h2>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="emailInput" placeholder="user@mail.com">
+      </div>
+      <div class="form-group">
+        <label>Bot ID</label>
+        <input type="text" id="botIdInput" placeholder="bot_id">
+      </div>
+      <div class="form-group">
+        <label>Bot Token</label>
+        <input type="password" id="botTokenInput" placeholder="bot_token">
+      </div>
+      <button id="saveAuthBtn" class="btn-primary">Сохранить</button>
+    </div>
+
+    <div id="mainSection" class="section" style="display: none;">
+      <div class="model-info">
+        <span id="currentModel">x-ai/grok-4.1-fast</span>
+        <span class="token-stat" id="tokenStat">0 токенов</span>
+      </div>
+      
+      <div class="form-group">
+        <label>Ваш вопрос</label>
+        <textarea id="questionInput" rows="4" placeholder="Задайте вопрос по тексту страницы..."></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label>Текст страницы</label>
+        <div id="pageTextPreview" class="text-preview">Загрузка...</div>
+      </div>
+      
+      <button id="askBtn" class="btn-primary">Задать вопрос</button>
+      
+      <div id="responseSection" class="response-section" style="display: none;">
+        <h3>Ответ ИИ</h3>
+        <div id="responseText" class="response-text"></div>
+      </div>
+    </div>
+
+    <div id="settingsSection" class="section" style="display: none;">
+      <h2>Настройки</h2>
+      
+      <div class="form-group">
+        <label>Модель ИИ</label>
+        <select id="modelSelect">
+          <option value="x-ai/grok-4.1-fast">x-ai/grok-4.1-fast</option>
+          <option value="openai/gpt-5-mini">openai/gpt-5-mini</option>
+          <option value="anthropic/claude-haiku-4.5">anthropic/claude-haiku-4.5</option>
+          <option value="google/gemini-3-flash-preview">google/gemini-3-flash-preview</option>
+        </select>
+      </div>
+      
+      <div class="stats-block">
+        <h4>Статистика</h4>
+        <div class="stat-row">
+          <span>Расход токенов:</span>
+          <span id="totalTokens">0</span>
+        </div>
+      </div>
+      
+      <button id="logoutBtn" class="btn-danger">Выйти из профиля</button>
+      <button id="backBtn" class="btn-secondary">Назад</button>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>Обработка запроса...</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
