@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>ProTalk AI — Резюме</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="panel">
+
+    <!-- Шапка -->
+    <header class="panel-header">
+      <span class="logo">🤖 ProTalk AI</span>
+      <div class="header-actions">
+        <button id="refreshBtn" class="icon-btn" title="Обновить резюме">↻</button>
+      </div>
+    </header>
+
+    <!-- Источник: заголовок и URL страницы -->
+    <div id="pageInfo" class="page-info hidden">
+      <span id="pageTitle" class="page-title"></span>
+      <span id="pageUrl" class="page-url"></span>
+    </div>
+
+    <!-- Баннер: страница изменилась -->
+    <div id="staleBanner" class="stale-banner hidden">
+      Страница изменилась —
+      <button id="staleRefreshBtn">обновить резюме</button>
+    </div>
+
+    <!-- Основной контент -->
+    <main id="content" class="content">
+
+      <!-- idle -->
+      <div id="stateIdle" class="state-block">
+        <p class="hint">Нажмите ↻ чтобы получить резюме текущей страницы</p>
+      </div>
+
+      <!-- loading -->
+      <div id="stateLoading" class="state-block hidden">
+        <div class="spinner"></div>
+        <p class="hint">Анализирую страницу...</p>
+      </div>
+
+      <!-- done / stale — резюме -->
+      <div id="stateSummary" class="state-block hidden">
+        <div id="summaryContent" class="summary-content"></div>
+      </div>
+
+      <!-- error -->
+      <div id="stateError" class="state-block hidden">
+        <p id="errorMessage" class="error-text"></p>
+        <button id="retryBtn" class="btn-secondary">Попробовать снова</button>
+      </div>
+
+    </main>
+
+    <!-- Подвал: уточняющий вопрос -->
+    <footer class="panel-footer">
+      <div class="question-row">
+        <textarea
+          id="questionInput"
+          class="question-input"
+          placeholder="Уточняющий вопрос по странице..."
+          rows="2"
+        ></textarea>
+        <button id="askBtn" class="ask-btn" title="Задать вопрос">→</button>
+      </div>
+      <div id="answerArea" class="answer-area hidden">
+        <div id="answerLoading" class="hidden">
+          <div class="spinner small"></div>
+        </div>
+        <div id="answerText" class="answer-text"></div>
+      </div>
+    </footer>
+
+  </div>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
