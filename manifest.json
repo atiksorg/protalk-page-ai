@@ -4,7 +4,10 @@
   "version": "1.0",
   "description": "AI-ассистент для анализа текста страницы через ProTalk API",
   "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["https://ai.pro-talk.ru/*"],
+  "host_permissions": [
+    "https://ai.pro-talk.ru/*",
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "background.js"
   },
