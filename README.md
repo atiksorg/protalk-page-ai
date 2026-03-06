@@ -1,3 +1,5 @@
+![Пример](https://wl.atiks.org/helpers/protalk-page-ai-example.jpg)
+
 # ProTalk Page AI
 
 Chrome-расширение для анализа веб-страниц и умного заполнения форм с помощью ИИ через ProTalk API.
