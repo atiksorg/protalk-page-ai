@@ -13,12 +13,20 @@
 function waitForStableDOM(timeout = 3000, quietPeriod = 500) {
   return new Promise((resolve) => {
     let timer;
+    let resolved = false;
+
+    const finish = () => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timer);
+      observer.disconnect();
+      resolve();
+    };
 
     const observer = new MutationObserver(() => {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        observer.disconnect();
-        resolve();
+        finish();
       }, quietPeriod);
     });
 
@@ -31,8 +39,7 @@ function waitForStableDOM(timeout = 3000, quietPeriod = 500) {
 
     // Абсолютный таймаут — не ждать бесконечно
     setTimeout(() => {
-      observer.disconnect();
-      resolve();
+      finish();
     }, timeout);
   });
 }
@@ -96,6 +103,9 @@ function initSPANavigationTracking() {
 // Состояние Input Assistant
 let inputAssistantEnabled = false;
 const attachedFields = new WeakSet();
+let fieldObserver = null;
+const fieldCleanupMap = new WeakMap();
+let activeMiniPopupCleanup = null;
 
 /**
  * Проверка, нужно ли прикреплять иконку к полю
@@ -329,8 +339,31 @@ function createMiniPopup() {
   const container = document.createElement('div');
   container.className = 'mini-popup';
   shadow.appendChild(container);
+
+  let closed = false;
+  let closeHandler = null;
+
+  const cleanup = () => {
+    if (closed) return;
+    closed = true;
+    if (closeHandler) {
+      document.removeEventListener('mousedown', closeHandler);
+    }
+    if (activeMiniPopupCleanup === cleanup) {
+      activeMiniPopupCleanup = null;
+    }
+    popup.remove();
+  };
   
-  return { popup, container, shadow };
+  return {
+    popup,
+    container,
+    shadow,
+    setCloseHandler(handler) {
+      closeHandler = handler;
+    },
+    cleanup
+  };
 }
 
 /**
@@ -377,16 +410,19 @@ function positionPopupNear(popup, anchor) {
  * @param {string} value 
  */
 function setNativeValue(field, value) {
-  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-    window.HTMLInputElement.prototype,
-    'value'
-  )?.set || Object.getOwnPropertyDescriptor(
-    window.HTMLTextAreaElement.prototype,
-    'value'
-  )?.set;
+  if (field.tagName === 'SELECT') {
+    field.value = value;
+    return;
+  }
+
+  const prototype = field.tagName === 'TEXTAREA'
+    ? window.HTMLTextAreaElement.prototype
+    : window.HTMLInputElement.prototype;
+
+  const nativeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
   
-  if (nativeInputValueSetter) {
-    nativeInputValueSetter.call(field, value);
+  if (nativeValueSetter) {
+    nativeValueSetter.call(field, value);
   } else {
     field.value = value;
   }
@@ -399,10 +435,12 @@ function setNativeValue(field, value) {
  */
 function showMiniPopup(field, anchorBtn) {
   // Удаляем предыдущий попап если есть
-  const existing = document.querySelector('.protalk-mini-popup-wrapper');
-  if (existing) existing.remove();
+  if (activeMiniPopupCleanup) {
+    activeMiniPopupCleanup();
+  }
   
-  const { popup, container } = createMiniPopup();
+  const { popup, container, cleanup, setCloseHandler } = createMiniPopup();
+  activeMiniPopupCleanup = cleanup;
   
   const ctx = getFieldContext(field);
   const form = field.closest('form');
@@ -412,7 +450,7 @@ function showMiniPopup(field, anchorBtn) {
     {
       icon: '💡',
       label: `Заполнить: ${ctx.label || ctx.placeholder || 'это поле'}`,
-      action: () => assistSingleField(field, ctx, popup)
+      action: () => assistSingleField(field, ctx, cleanup)
     }
   ];
   
@@ -420,7 +458,7 @@ function showMiniPopup(field, anchorBtn) {
     items.push({
       icon: '✏️',
       label: 'Улучшить текст',
-      action: () => improveFieldText(field, ctx, popup)
+      action: () => improveFieldText(field, ctx, cleanup)
     });
   }
   
@@ -428,7 +466,7 @@ function showMiniPopup(field, anchorBtn) {
     items.push({
       icon: '📋',
       label: 'Заполнить всю форму',
-      action: () => assistWholeForm(form, popup)
+      action: () => assistWholeForm(form, popup, cleanup)
     });
   }
   
@@ -439,10 +477,10 @@ function showMiniPopup(field, anchorBtn) {
   // Закрытие при клике вне
   const closeHandler = (e) => {
     if (!popup.contains(e.target)) {
-      popup.remove();
-      document.removeEventListener('mousedown', closeHandler);
+      cleanup();
     }
   };
+  setCloseHandler(closeHandler);
   setTimeout(() => document.addEventListener('mousedown', closeHandler), 0);
 }
 
@@ -484,8 +522,11 @@ async function sendToAI(prompt) {
  * @param {Object} ctx 
  * @param {Element} popup 
  */
-async function assistSingleField(field, ctx, popup) {
-  const container = popup.shadowRoot.querySelector('.mini-popup');
+async function assistSingleField(field, ctx, closePopup) {
+  const popup = document.querySelector('.protalk-mini-popup-wrapper');
+  const container = popup?.shadowRoot?.querySelector('.mini-popup');
+  if (!container) return;
+
   container.innerHTML = '<div class="mini-popup-loading">⏳ Генерация...</div>';
   
   try {
@@ -510,10 +551,10 @@ URL: ${location.href}
     field.dispatchEvent(new Event('input', { bubbles: true }));
     field.dispatchEvent(new Event('change', { bubbles: true }));
     
-    popup.remove();
+    closePopup();
   } catch (err) {
     container.innerHTML = `<div class="mini-popup-error">❌ ${err.message}</div>`;
-    setTimeout(() => popup.remove(), 2000);
+    setTimeout(() => closePopup(), 2000);
   }
 }
 
@@ -523,8 +564,11 @@ URL: ${location.href}
  * @param {Object} ctx 
  * @param {Element} popup 
  */
-async function improveFieldText(field, ctx, popup) {
-  const container = popup.shadowRoot.querySelector('.mini-popup');
+async function improveFieldText(field, ctx, closePopup) {
+  const popup = document.querySelector('.protalk-mini-popup-wrapper');
+  const container = popup?.shadowRoot?.querySelector('.mini-popup');
+  if (!container) return;
+
   container.innerHTML = '<div class="mini-popup-loading">⏳ Улучшение...</div>';
   
   try {
@@ -549,10 +593,10 @@ URL: ${location.href}
     field.dispatchEvent(new Event('input', { bubbles: true }));
     field.dispatchEvent(new Event('change', { bubbles: true }));
     
-    popup.remove();
+    closePopup();
   } catch (err) {
     container.innerHTML = `<div class="mini-popup-error">❌ ${err.message}</div>`;
-    setTimeout(() => popup.remove(), 2000);
+    setTimeout(() => closePopup(), 2000);
   }
 }
 
@@ -561,7 +605,7 @@ URL: ${location.href}
  * @param {Element} form 
  * @param {Element} popup 
  */
-async function assistWholeForm(form, popup) {
+async function assistWholeForm(form, popup, closePopup) {
   const container = popup.shadowRoot.querySelector('.mini-popup');
   container.innerHTML = '<div class="mini-popup-loading">⏳ Анализ формы...</div>';
   
@@ -577,7 +621,7 @@ URL: ${location.href}
 
 Поля формы:
 ${ctx.fields.map((f, i) =>
-  `${i + 1}. ${f.label || f.name || f.placeholder || 'поле без названия'} (тип: ${f.type})`
+  `${i + 1}. ${f.label || f.name || f.placeholder || 'поле без названия'} (тип: ${f.type}, текущее значение: ${JSON.stringify(f.currentValue || '')})`
 ).join('\n')}
 
 Верни JSON массив строк — по одному значению для каждого поля в том же порядке.
@@ -609,10 +653,10 @@ ${ctx.fields.map((f, i) =>
       }
     });
     
-    popup.remove();
+    closePopup();
   } catch (err) {
     container.innerHTML = `<div class="mini-popup-error">❌ ${err.message}</div>`;
-    setTimeout(() => popup.remove(), 2000);
+    setTimeout(() => closePopup(), 2000);
   }
 }
 
@@ -625,12 +669,14 @@ function attachButton(field) {
   if (!shouldAttachButton(field)) return;
   
   const { wrapper, btn } = createShadowButton();
+  const controller = new AbortController();
+  const { signal } = controller;
   
   // Показывать только при фокусе
   field.addEventListener('focus', () => {
     btn.style.opacity = '1';
     positionButton(wrapper, field);
-  });
+  }, { signal });
   
   field.addEventListener('blur', () => {
     setTimeout(() => {
@@ -640,21 +686,37 @@ function attachButton(field) {
         btn.style.opacity = '0';
       }
     }, 200);
-  });
+  }, { signal });
   
   btn.addEventListener('mousedown', (e) => {
     e.preventDefault();
     e.stopPropagation();
     showMiniPopup(field, btn);
-  });
+  }, { signal });
   
   document.body.appendChild(wrapper);
   attachedFields.add(field);
   
   // Обновление позиции при скролле/ресайзе
-  const updatePosition = () => positionButton(wrapper, field);
-  window.addEventListener('scroll', updatePosition, true);
-  window.addEventListener('resize', updatePosition);
+  const updatePosition = () => {
+    if (!field.isConnected) {
+      cleanup();
+      return;
+    }
+    positionButton(wrapper, field);
+  };
+
+  window.addEventListener('scroll', updatePosition, { capture: true, signal });
+  window.addEventListener('resize', updatePosition, { signal });
+
+  const cleanup = () => {
+    if (!fieldCleanupMap.has(field)) return;
+    controller.abort();
+    wrapper.remove();
+    fieldCleanupMap.delete(field);
+  };
+
+  fieldCleanupMap.set(field, cleanup);
 }
 
 /**
@@ -673,12 +735,13 @@ function scanFields() {
  */
 function initInputAssistant() {
   if (!inputAssistantEnabled) return;
+  if (fieldObserver) return;
   
   // Сканируем существующие поля
   scanFields();
   
   // Отслеживаем новые поля (SPA)
-  const fieldObserver = new MutationObserver((mutations) => {
+  fieldObserver = new MutationObserver((mutations) => {
     mutations.forEach(m => {
       m.addedNodes.forEach(node => {
         if (node.nodeType !== 1) return;
@@ -687,8 +750,20 @@ function initInputAssistant() {
           attachButton(node);
         }
         
-        node.querySelectorAll('input, textarea').forEach(field => {
+        node.querySelectorAll?.('input, textarea').forEach(field => {
           attachButton(field);
+        });
+      });
+
+      m.removedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+
+        if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+          fieldCleanupMap.get(node)?.();
+        }
+
+        node.querySelectorAll?.('input, textarea').forEach(field => {
+          fieldCleanupMap.get(field)?.();
         });
       });
     });
@@ -719,7 +794,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (inputAssistantEnabled) {
       initInputAssistant();
     } else {
-      // Удаляем все иконки
+      if (fieldObserver) {
+        fieldObserver.disconnect();
+        fieldObserver = null;
+      }
+      if (activeMiniPopupCleanup) {
+        activeMiniPopupCleanup();
+      }
+      document.querySelectorAll('input, textarea').forEach(field => {
+        fieldCleanupMap.get(field)?.();
+      });
       document.querySelectorAll('.protalk-input-assistant-wrapper').forEach(el => el.remove());
     }
     sendResponse({ ok: true });
