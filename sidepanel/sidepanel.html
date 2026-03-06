@@ -4,26 +4,55 @@
   <meta charset="UTF-8">
   <title>ProTalk AI — Резюме</title>
   <link rel="stylesheet" href="sidepanel.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="panel">
 
     <!-- Шапка -->
     <header class="panel-header">
-      <span class="logo">🤖 ProTalk AI</span>
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 8V4H8"/>
+          <rect width="16" height="12" x="4" y="8" rx="2"/>
+          <path d="M2 14h2"/>
+          <path d="M20 14h2"/>
+          <path d="M15 13v2"/>
+          <path d="M9 13v2"/>
+        </svg>
+        ProTalk AI
+      </div>
       <div class="header-actions">
-        <button id="refreshBtn" class="icon-btn" title="Обновить резюме">↻</button>
+        <button id="refreshBtn" class="icon-btn" title="Обновить резюме">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+            <path d="M16 16h5v5"/>
+          </svg>
+        </button>
       </div>
     </header>
 
     <!-- Источник: заголовок и URL страницы -->
     <div id="pageInfo" class="page-info hidden">
       <span id="pageTitle" class="page-title"></span>
-      <span id="pageUrl" class="page-url"></span>
+      <span id="pageUrl" class="page-url">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        <span id="pageUrlText"></span>
+      </span>
     </div>
 
     <!-- Баннер: страница изменилась -->
     <div id="staleBanner" class="stale-banner hidden">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
       Страница изменилась —
       <button id="staleRefreshBtn">обновить резюме</button>
     </div>
@@ -33,7 +62,17 @@
 
       <!-- idle -->
       <div id="stateIdle" class="state-block">
-        <p class="hint">Нажмите ↻ чтобы получить резюме текущей страницы</p>
+        <p class="hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8V4H8"/>
+            <rect width="16" height="12" x="4" y="8" rx="2"/>
+            <path d="M2 14h2"/>
+            <path d="M20 14h2"/>
+            <path d="M15 13v2"/>
+            <path d="M9 13v2"/>
+          </svg>
+          Нажмите кнопку обновления чтобы получить резюме текущей страницы
+        </p>
       </div>
 
       <!-- loading -->
@@ -45,8 +84,19 @@
       <!-- pageText — отображение текста страницы -->
       <div id="statePageText" class="state-block hidden">
         <div class="page-text-header">
-          <button id="copyPageTextBtn" class="btn-secondary">Копировать текст</button>
-          <button id="summarizePageBtn" class="btn-primary">Анализировать страницу</button>
+          <button id="copyPageTextBtn" class="btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+            </svg>
+            Копировать текст
+          </button>
+          <button id="summarizePageBtn" class="btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            </svg>
+            Анализировать страницу
+          </button>
         </div>
         <div class="markdown-body">
           <pre id="pageTextContent" class="page-text-content"></pre>
@@ -63,8 +113,23 @@
 
       <!-- error -->
       <div id="stateError" class="state-block hidden">
-        <p id="errorMessage" class="error-text"></p>
-        <button id="retryBtn" class="btn-secondary">Попробовать снова</button>
+        <p id="errorMessage" class="error-text">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span></span>
+        </p>
+        <button id="retryBtn" class="btn-secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+            <path d="M16 16h5v5"/>
+          </svg>
+          Попробовать снова
+        </button>
       </div>
 
     </main>
@@ -78,7 +143,12 @@
           placeholder="Уточняющий вопрос по странице..."
           rows="2"
         ></textarea>
-        <button id="askBtn" class="ask-btn" title="Задать вопрос">→</button>
+        <button id="askBtn" class="ask-btn" title="Задать вопрос">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2L11 13"/>
+            <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+        </button>
       </div>
       <div id="answerArea" class="answer-area hidden">
         <div id="answerLoading" class="hidden">
