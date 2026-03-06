@@ -216,31 +216,35 @@ function createShadowButton() {
   style.textContent = `
     .protalk-trigger {
       position: absolute;
-      right: 4px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 24px;
-      height: 24px;
+      left: 2px;
+      top: 2px;
+      width: 20px;
+      height: 20px;
       border: none;
-      border-radius: 4px;
+      border-radius: 3px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      font-size: 14px;
+      font-size: 12px;
       cursor: pointer;
       opacity: 0;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.3s ease, transform 0.2s ease;
       pointer-events: auto;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      animation: fadeInScale 0.3s ease-out;
+    }
+    @keyframes fadeInScale {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
     }
     .protalk-trigger:hover {
       opacity: 1 !important;
-      transform: translateY(-50%) scale(1.1);
+      transform: scale(1.15);
     }
     .protalk-trigger:active {
-      transform: translateY(-50%) scale(0.95);
+      transform: scale(0.9);
     }
   `;
   
@@ -267,7 +271,7 @@ function positionButton(wrapper, field) {
   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
   
   wrapper.style.top = `${rect.top + scrollTop}px`;
-  wrapper.style.left = `${rect.right - 32 + scrollLeft}px`;
+  wrapper.style.left = `${rect.left + scrollLeft}px`;
   wrapper.style.height = `${rect.height}px`;
 }
 
@@ -377,26 +381,69 @@ function renderMiniPopupItems(container, items) {
   container.innerHTML = '';
   
   items.forEach(item => {
-    const btn = document.createElement('button');
-    btn.className = 'mini-popup-item';
-    
-    const iconSpan = document.createElement('span');
-    iconSpan.className = 'mini-popup-icon';
-    iconSpan.textContent = item.icon;
+    if (item.type === 'input') {
+      // Специальный случай для поля ввода
+      const wrapper = document.createElement('div');
+      wrapper.style.padding = '10px 14px';
+      
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = item.placeholder || 'Введите задачу для ИИ...';
+      input.style.width = '100%';
+      input.style.padding = '6px 8px';
+      input.style.border = '1px solid #ddd';
+      input.style.borderRadius = '4px';
+      input.style.fontSize = '13px';
+      input.style.boxSizing = 'border-box';
+      
+      const submitBtn = document.createElement('button');
+      submitBtn.textContent = 'Заполнить';
+      submitBtn.style.marginTop = '8px';
+      submitBtn.style.padding = '4px 10px';
+      submitBtn.style.fontSize = '12px';
+      
+      submitBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        item.action(input.value);
+      });
+      
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          item.action(input.value);
+        }
+      });
+      
+      wrapper.appendChild(input);
+      wrapper.appendChild(submitBtn);
+      container.appendChild(wrapper);
+      
+      // Фокус на поле ввода
+      setTimeout(() => input.focus(), 10);
+    } else {
+      // Обычный пункт меню
+      const btn = document.createElement('button');
+      btn.className = 'mini-popup-item';
+      
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'mini-popup-icon';
+      iconSpan.textContent = item.icon;
 
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'mini-popup-label';
-    labelSpan.textContent = item.label;
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'mini-popup-label';
+      labelSpan.textContent = item.label;
 
-    btn.appendChild(iconSpan);
-    btn.appendChild(labelSpan);
-    
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      item.action();
-    });
-    container.appendChild(btn);
+      btn.appendChild(iconSpan);
+      btn.appendChild(labelSpan);
+      
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        item.action();
+      });
+      container.appendChild(btn);
+    }
   });
 }
 
@@ -410,6 +457,42 @@ function getFieldLabelForUI(field) {
     field.getAttribute('aria-label') ||
     field.placeholder ||
     'поле';
+}
+
+/**
+ * Показ мини-попапа с полем ввода задачи
+ * @param {Element} field 
+ * @param {Element} anchorBtn 
+ */
+function showMiniPopupWithInput(field, anchorBtn) {
+  // Удаляем предыдущий попап если есть
+  if (activeMiniPopupCleanup) {
+    activeMiniPopupCleanup();
+  }
+  
+  const { popup, container, cleanup, setCloseHandler } = createMiniPopup();
+  activeMiniPopupCleanup = cleanup;
+  
+  const items = [
+    {
+      type: 'input',
+      placeholder: 'Опишите, как заполнить это поле...',
+      action: (userPrompt) => assistWithCustomPrompt(field, userPrompt, popup, cleanup)
+    }
+  ];
+  
+  renderMiniPopupItems(container, items);
+  positionPopupNear(popup, anchorBtn);
+  document.body.appendChild(popup);
+  
+  // Закрытие при клике вне
+  const closeHandler = (e) => {
+    if (!popup.contains(e.target)) {
+      cleanup();
+    }
+  };
+  setCloseHandler(closeHandler);
+  document.addEventListener('mousedown', closeHandler);
 }
 
 /**
@@ -472,6 +555,11 @@ function showMiniPopup(field, anchorBtn) {
       icon: '💡',
       label: `Заполнить: ${fieldLabel}`,
       action: () => assistSingleField(field, popup, cleanup)
+    },
+    {
+      icon: '❓',
+      label: 'Спросить ИИ',
+      action: () => openSidePanelWithQuestion(field)
     }
   ];
   
@@ -507,6 +595,32 @@ function showMiniPopup(field, anchorBtn) {
 }
 
 /**
+ * Открытие боковой панели с предзаполненным вопросом
+ * @param {Element} field 
+ */
+async function openSidePanelWithQuestion(field) {
+  const ctx = getFieldContext(field);
+  const fieldName = ctx.label || ctx.placeholder || ctx.name || 'это поле';
+  
+  // Открываем боковую панель
+  await chrome.runtime.sendMessage({ action: 'openSidePanel' });
+  
+  // Отправляем сообщение в боковую панель для предзаполнения
+  // Нужно немного подождать, пока панель откроется
+  setTimeout(() => {
+    chrome.runtime.sendMessage({
+      action: 'prefillQuestion',
+      question: `Как заполнить поле "${fieldName}"?`
+    });
+  }, 500);
+  
+  // Закрываем текущий попап
+  if (activeMiniPopupCleanup) {
+    activeMiniPopupCleanup();
+  }
+}
+
+/**
  * Запрос к AI через background
  * @param {string} prompt 
  * @returns {Promise<string>}
@@ -536,6 +650,52 @@ async function sendToAI(prompt) {
       });
     });
   });
+}
+
+/**
+ * Помощь в заполнении одного поля по пользовательскому запросу
+ * @param {Element} field 
+ * @param {string} userPrompt 
+ * @param {Element} popup 
+ * @param {Function} closePopup 
+ */
+async function assistWithCustomPrompt(field, userPrompt, popup, closePopup) {
+  const container = popup.shadowRoot?.querySelector('.mini-popup');
+  if (!container) return;
+
+  container.innerHTML = '<div class="mini-popup-loading">⏳ Генерация...</div>';
+  
+  try {
+    const ctx = getFieldContext(field);
+    const pageText = extractVisibleText();
+    
+    const prompt = `
+Страница: ${document.title}
+URL: ${location.href}
+Контекст страницы: ${pageText.slice(0, 2000)}
+
+Заполни поле формы по следующему запросу пользователя: "${userPrompt}"
+Поле: "${ctx.label || ctx.placeholder || ctx.name || 'без названия'}"
+Тип: ${ctx.type}
+Текущее значение: ${ctx.currentValue || '(пусто)'}
+
+Ответь ТОЛЬКО текстом для вставки в поле, без пояснений.
+    `.trim();
+    
+    const result = await sendToAI(prompt);
+    
+    setNativeValue(field, result);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    closePopup();
+  } catch (err) {
+    const errDiv = document.createElement('div');
+    errDiv.className = 'mini-popup-error';
+    errDiv.textContent = `❌ ${err.message}`;
+    container.replaceChildren(errDiv);
+    setTimeout(() => closePopup(), 2000);
+  }
 }
 
 /**
@@ -723,7 +883,7 @@ function attachButton(field) {
   btn.addEventListener('mousedown', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    showMiniPopup(field, btn);
+    showMiniPopupWithInput(field, btn);
   }, { signal });
   
   document.body.appendChild(wrapper);
